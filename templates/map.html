@@ -1,0 +1,1559 @@
+<!--
+
+this is the client side and visual display
+
+Uses javascript file to handle events
+
+-->
+
+<!DOCTYPE html>
+
+<html>
+
+  <head>
+
+
+
+    <!--link rel="stylesheet" type="text/css" href="style.css" media="screen" /-->
+
+​
+
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+
+    <meta charset="utf-8">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
+    <script src="{{ url_for('static', filename='lightbox.js') }}"></script>
+
+    <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+
+    <script type="text/javascript" src="https://mpld3.github.io/js/mpld3.v0.2.js"></script>
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+
+
+    <title>CoreLogic Grand Challenge</title>
+
+​    <style type="text/css" src="static/lightbox.css"></style>
+
+    <style type="text/css">
+
+      #UserDisplayForm input { display: block; }
+
+      #UserDisplayForm button { display: inline-block; }
+
+      /* Preload images */
+
+body:after {
+
+  content: url(close.png) url(loading.gif) url(prev.png) url(next.png);
+
+  display: none;
+
+}
+
+
+
+body.lb-disable-scrolling {
+
+  overflow: hidden;
+
+}
+
+
+
+.lightboxOverlay {
+
+  position: absolute;
+
+  top: 0;
+
+  left: 0;
+
+  z-index: 9999;
+
+  background-color: black;
+
+  filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=80);
+
+  opacity: 0.8;
+
+  display: none;
+
+}
+
+
+
+.lightbox {
+
+  position: absolute;
+
+  left: 0;
+
+  width: 100%;
+
+  z-index: 10000;
+
+  text-align: center;
+
+  line-height: 0;
+
+  font-weight: normal;
+
+}
+
+
+
+.lightbox .lb-image {
+
+  display: block;
+
+  height: auto;
+
+  max-width: inherit;
+
+  max-height: none;
+
+  border-radius: 3px;
+
+
+
+  /* Image border */
+
+  border: 4px solid white;
+
+}
+
+
+
+.lightbox a img {
+
+  border: none;
+
+}
+
+
+
+.lb-outerContainer {
+
+  position: relative;
+
+  *zoom: 1;
+
+  width: 250px;
+
+  height: 250px;
+
+  margin: 0 auto;
+
+  border-radius: 4px;
+
+
+
+  /* Background color behind image.
+
+     This is visible during transitions. */
+
+  background-color: white;
+
+}
+
+
+
+.lb-outerContainer:after {
+
+  content: "";
+
+  display: table;
+
+  clear: both;
+
+}
+
+
+
+.lb-loader {
+
+  position: absolute;
+
+  top: 43%;
+
+  left: 0;
+
+  height: 25%;
+
+  width: 100%;
+
+  text-align: center;
+
+  line-height: 0;
+
+}
+
+
+
+.lb-cancel {
+
+  display: block;
+
+  width: 32px;
+
+  height: 32px;
+
+  margin: 0 auto;
+
+  background: url(loading.gif) no-repeat;
+
+}
+
+
+
+.lb-nav {
+
+  position: absolute;
+
+  top: 0;
+
+  left: 0;
+
+  height: 100%;
+
+  width: 100%;
+
+  z-index: 10;
+
+}
+
+
+
+.lb-container > .nav {
+
+  left: 0;
+
+}
+
+
+
+.lb-nav a {
+
+  outline: none;
+
+  background-image: url('data:image/gif;base64,R0lGODlhAQABAPAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==');
+
+}
+
+
+
+.lb-prev, .lb-next {
+
+  height: 100%;
+
+  cursor: pointer;
+
+  display: block;
+
+}
+
+
+
+.lb-nav a.lb-prev {
+
+  width: 34%;
+
+  left: 0;
+
+  float: left;
+
+  background: url(prev.png) left 48% no-repeat;
+
+  filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);
+
+  opacity: 0;
+
+  -webkit-transition: opacity 0.6s;
+
+  -moz-transition: opacity 0.6s;
+
+  -o-transition: opacity 0.6s;
+
+  transition: opacity 0.6s;
+
+}
+
+
+
+.lb-nav a.lb-prev:hover {
+
+  filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=100);
+
+  opacity: 1;
+
+}
+
+
+
+.lb-nav a.lb-next {
+
+  width: 64%;
+
+  right: 0;
+
+  float: right;
+
+  background: url(next.png) right 48% no-repeat;
+
+  filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);
+
+  opacity: 0;
+
+  -webkit-transition: opacity 0.6s;
+
+  -moz-transition: opacity 0.6s;
+
+  -o-transition: opacity 0.6s;
+
+  transition: opacity 0.6s;
+
+}
+
+
+
+.lb-nav a.lb-next:hover {
+
+  filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=100);
+
+  opacity: 1;
+
+}
+
+
+
+.lb-dataContainer {
+
+  margin: 0 auto;
+
+  padding-top: 5px;
+
+  *zoom: 1;
+
+  width: 100%;
+
+  -moz-border-radius-bottomleft: 4px;
+
+  -webkit-border-bottom-left-radius: 4px;
+
+  border-bottom-left-radius: 4px;
+
+  -moz-border-radius-bottomright: 4px;
+
+  -webkit-border-bottom-right-radius: 4px;
+
+  border-bottom-right-radius: 4px;
+
+}
+
+
+
+.lb-dataContainer:after {
+
+  content: "";
+
+  display: table;
+
+  clear: both;
+
+}
+
+
+
+.lb-data {
+
+  padding: 0 4px;
+
+  color: #ccc;
+
+}
+
+
+
+.lb-data .lb-details {
+
+  width: 85%;
+
+  float: left;
+
+  text-align: left;
+
+  line-height: 1.1em;
+
+}
+
+
+
+.lb-data .lb-caption {
+
+  font-size: 13px;
+
+  font-weight: bold;
+
+  line-height: 1em;
+
+}
+
+
+
+.lb-data .lb-caption a {
+
+  color: #4ae;
+
+}
+
+
+
+.lb-data .lb-number {
+
+  display: block;
+
+  clear: left;
+
+  padding-bottom: 1em;
+
+  font-size: 12px;
+
+  color: #999999;
+
+}
+
+
+
+.lb-data .lb-close {
+
+  display: block;
+
+  float: right;
+
+  width: 30px;
+
+  height: 30px;
+
+  background: url(close.png) top right no-repeat;
+
+  text-align: right;
+
+  outline: none;
+
+  filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=70);
+
+  opacity: 0.7;
+
+  -webkit-transition: opacity 0.2s;
+
+  -moz-transition: opacity 0.2s;
+
+  -o-transition: opacity 0.2s;
+
+  transition: opacity 0.2s;
+
+}
+
+
+
+.lb-data .lb-close:hover {
+
+  cursor: pointer;
+
+  filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=100);
+
+  opacity: 1;
+
+}
+
+
+
+      html, body
+
+      {
+
+        height: 100%;
+
+        margin: 0;
+
+        padding: 0;
+
+        overflow: hidden;
+
+      }
+
+      body
+
+      {
+
+        background-color: #ffffff; /* Chrome10-25,Safari5.1-6 */
+
+
+
+      }
+
+
+
+      }
+
+
+
+      label
+
+      {
+
+        vertical-align: middle;
+
+      }
+
+
+
+      #description {
+
+        font-family: Roboto;
+
+        font-size: 15px;
+
+        font-weight: 300;
+
+      }
+
+
+
+      #infowindow-content .title {
+
+        font-weight: bold;
+
+      }
+
+
+
+      #infowindow-content {
+
+        display: none;
+
+      }
+
+
+
+      #map #infowindow-content {
+
+        display: inline;
+
+      }
+
+
+
+      .pac-card {
+
+        margin: 10px 10px 0 0;
+
+        border-radius: 2px 0 0 2px;
+
+        box-sizing: border-box;
+
+        -moz-box-sizing: border-box;
+
+        outline: none;
+
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+
+        background-color: #fff;
+
+        font-family: Roboto;
+
+      }
+
+
+
+      #pac-container {
+
+        padding-bottom: 12px;
+
+        margin-right: 12px;
+
+      }
+
+
+
+      .pac-controls {
+
+        display: inline-block;
+
+        padding: 5px 11px;
+
+      }
+
+
+
+      .pac-controls label {
+
+        font-family: Roboto;
+
+        font-size: 13px;
+
+        font-weight: 300;
+
+      }
+
+
+
+      #searchbox {
+
+        size: 30;
+
+        font-size: 16px;
+
+        border-radius: 1px;
+
+        margin-left: 30px;
+
+        margin-top: 0px;
+
+        padding: 1px;
+
+        margin-left: 60;
+
+        width: 420px;
+
+        height: 100px;
+
+
+
+      }
+
+
+
+      #searchbox:focus {
+
+        border-color: #4d90fe;
+
+      }
+
+
+
+      #title {
+
+        color: #fff;
+
+        background-color: #ffffff;
+
+        font-size: 25px;
+
+        font-weight: 500;
+
+        padding: 3px 3px;
+
+      }
+
+      #target {
+
+        width: 345px;
+
+      }
+
+      #image {
+
+        height: 50%;
+
+        float: left;
+
+      }
+
+      .container{
+
+        width: 100%;
+
+        height: 100%;
+
+
+
+      }
+
+
+
+      .searchbox{
+
+        width: 400px;
+
+        height: 24px;
+
+        margin-top: -10px;
+
+
+
+      }
+
+      .map_container_pre_search{
+
+        width: 100%;
+
+        height: 100%;
+
+        position: center;
+
+        margin: 0;
+
+      }
+
+      .map_container{
+
+        width: 60%;
+
+        height: 97.5%;
+
+        float: right;
+
+        margin-right: 0;
+
+        margin-left: 2.5%;
+
+        margin-right: 0;
+
+        margin-bottom: 2.5%;
+
+      }
+
+      #map
+
+      {
+
+        height: 100%;
+
+        width: 100%;
+
+        margin-right: 0;
+
+        float: right;
+
+
+
+      }
+
+      #plot{
+
+        height: 100%;
+
+        width: 100%;
+
+        margin-right: 0;
+
+        float: right;
+
+        display: none;
+
+      }
+
+      .information_pre_search{
+
+        display: none;
+
+      }
+
+      .information_container{
+
+        height: 100%;
+
+        width: 30%;
+
+        float: left;
+
+        margin-left: 2.5%;
+
+        margin-right: 2.5%;
+
+
+
+      }
+
+      a{
+
+        text-decoration: none;
+
+        color: black;
+
+      }
+
+      ul{
+
+        list-style-type: none;
+
+        font-family: sans-serif;
+
+        letter-spacing: 1px;
+
+        font-size: 8;
+
+      }
+
+      h1{
+
+        padding: 0px;
+
+        margin: 0px;
+
+      }
+
+      .header{
+
+        margin-top: -2%;
+
+        background-color: #2d3b5f;
+
+        padding-top: 1%;
+
+        padding-bottom: 1%;
+
+      }
+
+      #logo{
+
+        width:600px;
+
+      }
+
+      .button_container_pre_search{
+
+        display: none;
+
+      }
+
+      .button_container{
+
+        float: right;
+
+        margin-right: 40%;
+
+      }
+
+      #location_icon{
+
+        width: 20px;
+
+        height:20px;
+
+      }
+
+    </style>
+
+
+
+  </head>
+
+  <body>
+
+    <div class="header">
+
+      <h1>
+
+        <center>
+
+          <img id="logo" src="/static/viewfinder.png">
+
+
+
+          <br><input id="searchinput" class="searchbox" type="text" placeholder="S E A R C H  A D D R E S S . . .">
+
+        </center>
+
+      </h1>
+
+    </div>
+
+
+
+
+
+    <div class="container">
+
+      <div id="information_container" class="information_pre_search">
+
+        <div>
+
+          <center>
+
+          <ul>
+
+            <a href="" style="display:none;" id="house2" data-lightbox="gallery">House Information</a>
+
+            <a href="" style="display:none;" id="house3" data-lightbox="gallery">House Information</a>
+
+            <a href="" style="display:none;" id="house4" data-lightbox="gallery">House Information</a>
+
+            <h2 style="letter-spacing:2px;"><li id="house_address" ><strong>Address:</strong></li></h2 style="letter-spacing:2px;">
+
+
+
+            <h3>
+
+            <li id="house_elevation"><strong>Elevation: </strong></li>
+
+            <li id="house_lat_long"><strong>Latitude: </strong></li>
+
+            <a href="" id="house1" data-lightbox="gallery">📷 Home Photos</a>
+
+            </h3>
+
+
+
+          </ul>
+
+          <h2 id="obstruction_header">Potential Obstructions:</h2>
+
+          <ul id="obstructions" style="overflow-y:scroll;">
+
+
+
+          </ul>
+
+          </center>
+
+        </div>
+
+
+
+      </div>
+
+      <div id="map_container" class="map_container_pre_search">
+
+        <div id="button_container" class="button_container_pre_search">
+
+          <button id="map_button" value=1 onclick="map_toggle();">Map</button>
+
+          <button id="plot_button" value=0 onclick="plot_toggle();">Plot</button>
+
+        </div>
+
+
+
+        <div id="map"></div>​
+
+        <div id="plot"></div>
+
+      </div>
+
+    </div>
+
+
+
+    <script>
+
+
+
+      function map_toggle(){
+
+        if (document.getElementById("map_button").value == 0) {
+
+          document.getElementById("map").style.display = "block";
+
+          document.getElementById("map_button").value = 0;
+
+          document.getElementById("plot_button").value = 0;
+
+          document.getElementById("plot").style.display = "none";
+
+        };
+
+      }
+
+      function plot_toggle(){
+
+        if (document.getElementById("plot_button").value == 0) {
+
+          document.getElementById("plot").style.display = "block";
+
+          document.getElementById("plot_button").value = 0;
+
+          document.getElementById("map_button").value = 0;
+
+          document.getElementById("map").style.display = "none";
+
+        };
+
+      }
+
+      function initAutocomplete() {
+
+          var map = new google.maps.Map(document.getElementById('map'), {
+
+            center: {lat: 32.798287, lng: -117.216343},
+
+            zoom: 12,
+
+            mapTypeId: 'satellite'
+
+          });
+
+
+
+          // Create the search box and link it to the UI element.
+
+          var input = document.getElementById('searchinput');
+
+          var searchBox = new google.maps.places.SearchBox(input);
+
+          //map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+
+
+          // Bias the SearchBox results towards current map's viewport.
+
+          map.addListener('bounds_changed', function() {
+
+            searchBox.setBounds(map.getBounds());
+
+          });
+
+
+
+          var markers = [];
+
+          // Listen for the event fired when the user selects a prediction and retrieve
+
+          // more details for that place.
+
+          searchBox.addListener('places_changed', function() {
+
+
+
+            document.getElementById("map_container").className = "map_container";
+
+            document.getElementById("information_container").className = "information_container";
+
+            document.getElementById("button_container").className = "button_container";
+
+
+
+            var places = searchBox.getPlaces();
+
+            var obstruction_list = document.getElementById("obstructions");
+
+            obstruction_list.innerHTML = "";
+
+            var l = document.createElement("h2");
+
+            obstruction_list.appendChild(l);
+
+
+
+            if (places.length == 0) {
+
+              return;
+
+            }
+
+
+
+            // Clear out the old markers.
+
+            markers.forEach(function(marker) {
+
+              marker.setMap(null);
+
+            });
+
+            markers = [];
+
+
+
+            // For each place, get the icon, name and location.
+
+            var bounds = new google.maps.LatLngBounds();
+
+            places.forEach(function(place) {
+
+              if (!place.geometry) {
+
+                console.log("Returned place contains no geometry");
+
+                return;
+
+              }
+
+              var icon = {
+
+                url: place.icon,
+
+                size: new google.maps.Size(71, 71),
+
+                origin: new google.maps.Point(0, 0),
+
+                anchor: new google.maps.Point(17, 34),
+
+                scaledSize: new google.maps.Size(25, 25)
+
+              };
+
+
+
+              // Create a marker for each place.
+
+              markers.push(new google.maps.Marker({
+
+                map: map,
+
+                icon: icon,
+
+                title: place.name,
+
+                position: place.geometry.location
+
+              }));
+
+
+
+              var markerReq = $.get("/streetView/" + $("#searchinput").val());
+
+              document.getElementById("house_address").innerHTML = $("#searchinput").val();
+
+
+
+
+
+              markerReq.done(function(data) {
+
+                document.getElementById("house1").href = data + "=0.jpg";
+
+                document.getElementById("house2").href = data + "=90.jpg";
+
+                document.getElementById("house3").href = data + "=180.jpg";
+
+                document.getElementById("house4").href = data + "=270.jpg";
+
+               // document.getElementById("image").src = data;
+
+              });
+
+              var obstructions_request = $.get("/getHazards/" + $("#searchinput").val());
+
+              obstructions_request.done(function(hazards){
+
+                hazards = JSON.parse(hazards);
+
+                var target = [parseFloat(hazards['house']['lat_long'][0]),parseFloat(hazards['house']['lat_long'][1]),parseFloat(hazards['house']['elevation'])]
+
+                document.getElementById("house_lat_long").innerHTML = "<img id=\"location_icon\"src=\"\\static\\location-icon.png\"> ("+
+
+                  hazards['house']['lat_long'][0]+"°, "+hazards['house']['lat_long'][1]+"°)".bold();
+
+                document.getElementById("house_elevation").innerHTML = "⛰️ Elevation: ".bold() + hazards['house']['elevation'] +" ft";
+
+
+
+                var hazards_list = hazards['house']['hazards'].split('+');
+
+                if (hazards_list[0].toLowerCase() == 'none') {
+
+                  document.getElementById("obstruction_header").textContent = "No Obstructions 🌴";
+
+                }
+
+                else{
+
+                  var cutoff = 0;
+
+                  var x_values = [];
+
+                  var y_values = [];
+
+                  var z_values = [];
+
+                  document.getElementById("obstruction_header").textContent = "Potential Obstructions: ";
+
+                  var houses = hazards_list[0].split('|');
+
+                  var natural = hazards_list[1].split('|');
+
+
+
+                  var i = 0;
+
+                  natural.forEach(function(natural_obstruction){
+
+
+
+                    obstruction = natural_obstruction.split(';');
+
+
+
+                    markers.push(new google.maps.Marker({
+
+                      map: map,
+
+                      icon: 'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=' + parseInt(++i) + '|4bf934|000000',
+
+                      title: "Natural Obstruction",
+
+                      position: {lat: parseFloat(obstruction[0]),lng: parseFloat(obstruction[1]) }
+
+                    }));
+
+                    x_values.push(parseFloat(obstruction[0]));
+
+                    y_values.push(parseFloat(obstruction[1]));
+
+                    z_values.push(parseFloat(obstruction[2]));
+
+                    var obstruction_list = document.getElementById("obstructions");
+
+                    var li = document.createElement("li");
+
+                    var child_ul = document.createElement("ul");
+
+                    var sub_li_1 = document.createElement("li");
+
+                    sub_li_1.innerHTML = "Natural Obstruction".bold();
+
+                    var sub_li_2 = document.createElement("li");
+
+                    sub_li_2.innerHTML = "<img id=\"location_icon\"src=\"\\static\\location-icon.png\"> <strong>("+obstruction[0]+"°, "+obstruction[1]+"°)</strong>";
+
+                    var sub_li_3 = document.createElement("li");
+
+                    sub_li_3.innerHTML = "⛰️ Elevation: ".bold() + parseFloat(obstruction[2]).toFixed(2).toString().bold();
+
+
+
+                    li.innerHTML = '--'.bold() + i.toString().bold() + "--".bold();
+
+                    child_ul.appendChild(sub_li_1);
+
+                    child_ul.appendChild(sub_li_2);
+
+                    child_ul.appendChild(sub_li_3);
+
+
+
+                    linebreak = document.createElement("br");
+
+
+
+                    li.appendChild(child_ul);
+
+                    li.appendChild(linebreak);
+
+                    obstruction_list.appendChild(li);
+
+
+
+                  });
+
+                  cutoff = i;
+
+                  houses.forEach(function(house){
+
+                    elevation_call = $.get("/get_house_elevation/" + house);
+
+
+
+                    elevation_call.done(function(data){
+
+                      data = data.split('|');
+
+
+
+                      markers.push(new google.maps.Marker({
+
+                        map: map,
+
+                        icon: 'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=' + parseInt(++i) + '|FE6256|000000',
+
+                        title: house,
+
+                        position: {lat: parseFloat(data[0]),lng: parseFloat(data[1]) }
+
+                      }));
+
+
+
+                      var obstruction_list = document.getElementById("obstructions");
+
+                      var li = document.createElement("li");
+
+                      var child_ul = document.createElement("ul");
+
+                      var sub_li_1 = document.createElement("li");
+
+                      sub_li_1.innerHTML = house.bold();
+
+                      var sub_li_2 = document.createElement("li");
+
+                      sub_li_2.innerHTML = "<img id=\"location_icon\"src=\"\\static\\location-icon.png\"> <strong>("+data[0]+"°, "+data[1]+"°)</strong>";
+
+                      var sub_li_3 = document.createElement("li");
+
+                      sub_li_3.innerHTML = "⛰️ Elevation: ".bold() + parseFloat(data[2]).toFixed(2).toString().bold();
+
+
+
+                      x_values.push(parseFloat(data[0]));
+
+                      y_values.push(parseFloat(data[1]));
+
+                      z_values.push(parseFloat(data[2]));
+
+
+
+                      li.innerHTML = '--'.bold() + i.toString().bold() + "--".bold();
+
+                      child_ul.appendChild(sub_li_1);
+
+                      child_ul.appendChild(sub_li_2);
+
+                      child_ul.appendChild(sub_li_3);
+
+
+
+                      linebreak = document.createElement("br");
+
+
+
+                      li.appendChild(child_ul);
+
+                      li.appendChild(linebreak);
+
+                      obstruction_list.appendChild(li);
+
+                    })
+
+                  });
+
+                  console.log(target);
+
+                  var scalex =
+
+                  Plotly.d3.csv('https://raw.githubusercontent.com/plotly/datasets/master/3d-scatter.csv', function(err, rows){
+
+                function unpack(rows, key) {
+
+                  return rows.map(function(row)
+
+                    { return row[key]; });
+
+                  }
+
+                  var target_house={
+
+                    x: target[0],  y: target[1], z: target[2],
+
+                    mode: 'markers',
+
+                    marker: {
+
+                      size: 12,
+
+                      line: {
+
+                        color: 'rgba(255, 0, 0, 0.14)',
+
+                        width: 0.5
+
+                      },
+
+                      opacity: 0.8
+
+                    },
+
+                    type: 'scatter3d'
+
+                  };
+
+                  var natural = {
+
+                    x: x_values.slice(0,cutoff),  y: y_values.slice(0,cutoff), z: z_values.slice(0,cutoff),
+
+                    mode: 'markers',
+
+                    marker: {
+
+                      size: 12,
+
+                      line: {
+
+                        color: 'rgba(217, 217, 217, 0.14)',
+
+                        width: 0.5
+
+                      },
+
+                      opacity: 0.8
+
+                    },
+
+                    type: 'scatter3d'
+
+                  };
+
+                  var homes = {
+
+                    x: x_values.slice(cutoff,i),  y: y_values.slice(cutoff,i), z: z_values.slice(cutoff,i),
+
+                    mode: 'markers',
+
+                    marker: {
+
+                      size: 12,
+
+                      line: {
+
+                        color: 'rgba(100, 100, 100, 0.14)',
+
+                        width: 0.5
+
+                      },
+
+                      opacity: 0.8
+
+                    },
+
+                    type: 'scatter3d'
+
+                  };
+
+
+
+                  var data = [natural,homes,target_house];
+
+
+
+                  var layout = {
+
+                    autosize: false,
+
+                    width: 700,
+
+                    height: 500,
+
+                    margin: {
+
+                      l: 0,
+
+                      r: 0,
+
+                      b: 0,
+
+                      t: 0,
+
+                      pad: 4
+
+                    },
+
+                    xaxis: {
+
+                      autotick: false,
+
+                      ticks: 'outside',
+
+                      tick0: Math.min(target[0],Math.min.apply(Math, x_values)),
+
+                      dtick: 0.25,
+
+                      ticklen: Math.max.apply(Math, x_values),
+
+                      tickwidth: 4,
+
+                      tickcolor: '#000'
+
+                    },
+
+                    yaxis: {
+
+                      autotick: false,
+
+                      ticks: 'outside',
+
+                      tick0: Math.min(target[1],Math.min.apply(Math, y_values)),
+
+                      dtick: 0.25,
+
+                      ticklen: Math.max.apply(Math, y_values),
+
+                      tickwidth: 4,
+
+                      tickcolor: '#000'
+
+                    },
+
+                    zaxis: {
+
+                      autotick: false,
+
+                      ticks: 'outside',
+
+                      tick0: Math.min(target[2],Math.min.apply(Math, z_values)),
+
+                      dtick: 0.25,
+
+                      ticklen: Math.max.apply(Math, z_values),
+
+                      tickwidth: 4,
+
+                      tickcolor: '#000'
+
+                    }
+
+                  };
+
+                  Plotly.newPlot('plot', data, layout);
+
+                  });
+
+
+
+
+
+
+
+
+
+                }
+
+
+
+
+
+              });
+
+
+
+
+
+              if (place.geometry.viewport) {
+
+                // Only geocodes have viewport.
+
+                bounds.union(place.geometry.viewport);
+
+              } else {
+
+                bounds.extend(place.geometry.location);
+
+              }
+
+            });
+
+            map.fitBounds(bounds);
+
+          });
+
+        }
+
+
+
+
+
+    </script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAHug-Dmh0Di3WqG7QiNYowIzWPGjn3Ei0&libraries=places&callback=initAutocomplete"
+
+         async defer></script>
+
+
+
+  </body>
+
+</html>
